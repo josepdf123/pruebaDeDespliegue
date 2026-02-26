@@ -1,0 +1,97 @@
+{% extends 'core/base.html' %}
+{% block title %}Panel Cocina{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-fire me-2"></i>Panel de Cocina</h2>
+    <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-warning text-dark fs-6">{{ pedidos|length }} pedido(s) activo(s)</span>
+        <a href="{% url 'panel_mesero' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Mesero
+        </a>
+    </div>
+</div>
+
+{% if pedidos %}
+    <div class="row g-4">
+        {% for pedido in pedidos %}
+            <div class="col-md-4">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark fw-bold d-flex justify-content-between">
+                        <span><i class="bi bi-grid me-1"></i>Mesa {{ pedido.idMesa.numMesa }}</span>
+                        <span class="small">{{ pedido.fecha|date:"H:i" }}</span>
+                    </div>
+                    <div class="card-body">
+                        {% for detalle in pedido.detalles.all %}
+                            <div class="d-flex justify-content-between border-bottom py-2">
+                                <div>
+                                    <span class="fw-bold fs-5">{{ detalle.cantidad }}x</span>
+                                    <span class="fs-6"> {{ detalle.plato.nombre }}</span>
+                                    {% if detalle.notas %}
+                                        <br><small class="text-danger fst-italic">⚠️ {{ detalle.notas }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        {% if request.session.usuario_rol != 'Mesero' %}
+                            <form method="POST" class="mt-3">
+                                {% csrf_token %}
+                                <input type="hidden" name="pedido_id" value="{{ pedido.pk }}">
+                                {% if pedido.idEstado.id == 7 %}
+                                    <button type="submit" name="accion" value="preparando" class="btn btn-warning w-100 fw-bold">
+                                        <i class="bi bi-fire me-2"></i>Marcar En Preparación
+                                    </button>
+                                {% elif pedido.idEstado.id == 9 %}
+                                    <button type="submit" name="accion" value="listo" class="btn btn-success w-100 fw-bold">
+                                        <i class="bi bi-check-circle me-2"></i>Marcar como Listo
+                                    </button>
+                                {% endif %}
+                                <button type="submit" name="accion" value="cancelar"
+                                    class="btn btn-outline-danger w-100 fw-bold mt-2"
+                                    onclick="return confirm('¿Seguro que querés cancelar este pedido?')">
+                                    <i class="bi bi-x-circle me-2"></i>Cancelar Pedido
+                            </form>
+                        {% else %}
+                            {% if pedido.idEstado.id == 7 %}
+                                <div class="alert alert-warning mt-3 text-center py-2 mb-0">
+                                    <i class="bi bi-clock me-1"></i> En Cocina
+                                </div>
+                            {% elif pedido.idEstado.id == 9 %}
+                                <div class="alert alert-primary mt-3 text-center py-2 mb-0">
+                                    <i class="bi bi-fire me-1"></i> En Preparación
+                                </div>
+                            {% elif pedido.idEstado.id == 8 %}
+                                <div class="alert alert-success mt-3 text-center py-2 mb-0">
+                                    <i class="bi bi-check-circle me-1"></i> Listo para entregar
+                                </div>
+                            {% elif pedido.idEstado.id == 6 %}
+                                <div class="alert alert-danger mt-3 text-center py-2 mb-0">
+                                    <i class="bi bi-x-circle me-1"></i> Cancelado por cocina
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    <div class="card-footer text-muted small">
+                        Pedido #{{ pedido.pk }} · Total: ${{ pedido.total|floatformat:0 }}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-emoji-smile" style="font-size:3rem;"></i>
+        <h4 class="mt-3">¡Todo al día! No hay pedidos en cocina.</h4>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresca cada 30 segundos
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}

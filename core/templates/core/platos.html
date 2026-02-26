@@ -1,0 +1,119 @@
+{% extends 'core/base.html' %}
+{% block title %}Platos - Restaurante{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-egg-fried me-2"></i>Platos y bebidas</h2>
+    <span class="text-muted">Total: {{ platos.count }} plato(s)</span>
+</div>
+
+<div class="row g-4">
+
+    <!-- Card Agregar Plato -->
+    <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="card card-add h-100" data-bs-toggle="modal" data-bs-target="#modalAgregarPlato">
+            <div class="text-center text-muted p-4">
+                <i class="bi bi-plus-circle" style="font-size: 2.5rem;"></i>
+                <p class="mt-2 fw-semibold">Agregar Plato</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Platos -->
+    {% for plato in platos %}
+        <div class="col-sm-6 col-md-4 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ plato.nombre }}</h5>
+                    <p class="card-text text-muted small">
+                        {% if plato.descripcion %}{{ plato.descripcion }}{% else %}Sin descripción{% endif %}
+                    </p>
+                    <div class="mt-auto">
+                        <span class="badge bg-success fs-6">
+                            <i class="bi bi-currency-dollar"></i>
+                            ${{ plato.precio|floatformat:0 }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent d-flex gap-2">
+                    <a href="{% url 'plato_editar' plato.pk %}" class="btn btn-outline-secondary btn-sm flex-fill">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <button class="btn btn-outline-danger btn-sm flex-fill"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalEliminarPlato{{ plato.pk }}">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Eliminar Plato -->
+        <div class="modal fade" id="modalEliminarPlato{{ plato.pk }}" tabindex="-1">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">¿Eliminar "{{ plato.nombre }}"?</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">Esta acción no se puede deshacer.</div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                        <form method="POST" action="{% url 'plato_eliminar' plato.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">No hay platos registrados aún.</div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Agregar Plato -->
+<div class="modal fade" id="modalAgregarPlato" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Agregar Plato</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger py-2">
+                            Revisa los campos marcados en rojo.
+                        </div>
+                    {% endif %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="text-danger small mt-1">{{ field.errors.as_text }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-dark">
+                        <i class="bi bi-save me-1"></i> Guardar Plato
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% if form.errors %}
+    <script>
+        var modal = new bootstrap.Modal(document.getElementById('modalAgregarPlato'));
+        modal.show();
+    </script>
+{% endif %}
+{% endblock %}

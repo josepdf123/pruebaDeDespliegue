@@ -1,0 +1,133 @@
+{% extends 'core/base.html' %}
+{% block title %}Mesas - Restaurante{% endblock %}
+{% block nav_mesas %}active{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-grid-3x3-gap me-2"></i>Mesas</h2>
+    <span class="text-muted">Total: {{ mesas.count }} mesa(s)</span>
+</div>
+
+<div class="row g-4">
+
+    <!-- Card Agregar Mesa -->
+    <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="card card-add h-100" data-bs-toggle="modal" data-bs-target="#modalAgregarMesa">
+            <div class="text-center text-muted p-4">
+                <i class="bi bi-plus-circle" style="font-size: 2.5rem;"></i>
+                <p class="mt-2 fw-semibold">Agregar Mesa</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Mesas -->
+    {% for mesa in mesas %}
+        <div class="col-sm-6 col-md-4 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+
+                    {% if mesa.estado.descripcion|lower == 'disponible' %}
+                        <div class="mesa-number text-success">{{ mesa.numMesa }}</div>
+                        <p class="text-muted small mb-2">Mesa</p>
+                        <span class="badge badge-disponible fs-6 px-3 py-2 mb-3">
+                            <i class="bi bi-check-circle me-1"></i> {{ mesa.estado.descripcion }}
+                        </span>
+                    {% elif mesa.estado.descripcion|lower == 'reservada' %}
+                        <div class="mesa-number text-warning">{{ mesa.numMesa }}</div>
+                        <p class="text-muted small mb-2">Mesa</p>
+                        <span class="badge badge-reservada fs-6 px-3 py-2 mb-3">
+                            <i class="bi bi-clock me-1"></i> {{ mesa.estado.descripcion }}
+                        </span>
+                    {% else %}
+                        <div class="mesa-number text-danger">{{ mesa.numMesa }}</div>
+                        <p class="text-muted small mb-2">Mesa</p>
+                        <span class="badge badge-ocupada fs-6 px-3 py-2 mb-3">
+                            <i class="bi bi-x-circle me-1"></i> {{ mesa.estado.descripcion }}
+                        </span>
+                    {% endif %}
+
+                    <div class="text-muted small">
+                        <i class="bi bi-people me-1"></i> Capacidad: <strong>{{ mesa.capacidad }}</strong> personas
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent d-flex gap-2">
+                    <a href="{% url 'mesa_editar' mesa.pk %}" class="btn btn-outline-secondary btn-sm flex-fill">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <button class="btn btn-outline-danger btn-sm flex-fill"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalEliminar{{ mesa.pk }}">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Eliminar -->
+        <div class="modal fade" id="modalEliminar{{ mesa.pk }}" tabindex="-1">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">¿Eliminar Mesa {{ mesa.numMesa }}?</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">Esta acción no se puede deshacer.</div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                        <form method="POST" action="{% url 'mesa_eliminar' mesa.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">No hay mesas registradas aún.</div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Agregar Mesa -->
+<div class="modal fade" id="modalAgregarMesa" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Agregar Mesa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="text-danger small mt-1">{{ field.errors.as_text }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-dark">
+                        <i class="bi bi-save me-1"></i> Guardar Mesa
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    {% if form.errors %}
+        var modal = new bootstrap.Modal(document.getElementById('modalAgregarMesa'));
+        modal.show();
+    {% endif %}
+</script>
+{% endblock %}

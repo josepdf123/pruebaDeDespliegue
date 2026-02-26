@@ -1,0 +1,88 @@
+{% extends 'core/base.html' %}
+{% block title %}Panel Mesero{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-badge me-2"></i>Panel del Mesero</h2>
+    <a href="{% url 'panel_cocina' %}" class="btn btn-warning">
+        <i class="bi bi-fire me-1"></i> Ver Cocina
+    </a>
+</div>
+
+<!-- Notificaciones de pedidos listos -->
+{% if pedidos_listos %}
+    <div class="mb-4">
+        {% for pedido in pedidos_listos %}
+            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-3" role="alert">
+                <i class="bi bi-bell-fill fs-4"></i>
+                <div>
+                    <strong>¡Pedido listo para entregar!</strong>
+                    Mesa <strong>{{ pedido.idMesa.numMesa }}</strong> — Pedido #{{ pedido.pk }}
+                    <span class="badge bg-success ms-2">Lista</span>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<div class="row g-4">
+    {% for mesa in mesas %}
+        <div class="col-sm-6 col-md-4 col-lg-3">
+            <a href="{% url 'mesa_pedido' mesa.pk %}" class="text-decoration-none">
+                <div class="card h-100 position-relative">
+                    <!-- Badge de pedido listo sobre la card -->
+                    {% for pedido in pedidos_listos %}
+                        {% if pedido.idMesa.pk == mesa.pk %}
+                            <span class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-success"
+                                  style="font-size:0.75rem; z-index:1;">
+                                <i class="bi bi-check-lg"></i> Lista
+                            </span>
+                        {% endif %}
+                    {% endfor %}
+
+                    <div class="card-body text-center">
+                        {% if mesa.estado.descripcion|lower == 'disponible' %}
+                            <div class="mesa-number text-success">{{ mesa.numMesa }}</div>
+                            <span class="badge badge-disponible fs-6 px-3 py-2 mb-2">
+                                <i class="bi bi-check-circle me-1"></i>{{ mesa.estado.descripcion }}
+                            </span>
+                        {% elif mesa.estado.descripcion|lower == 'reservada' %}
+                            <div class="mesa-number text-warning">{{ mesa.numMesa }}</div>
+                            <span class="badge badge-reservada fs-6 px-3 py-2 mb-2">
+                                <i class="bi bi-clock me-1"></i>{{ mesa.estado.descripcion }}
+                            </span>
+                        {% else %}
+                            <div class="mesa-number text-danger">{{ mesa.numMesa }}</div>
+                            <span class="badge badge-ocupada fs-6 px-3 py-2 mb-2">
+                                <i class="bi bi-x-circle me-1"></i>{{ mesa.estado.descripcion }}
+                            </span>
+                        {% endif %}
+                        <div class="text-muted small mt-2">
+                            <i class="bi bi-people me-1"></i> {{ mesa.capacidad }} personas
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent text-center">
+                        <small class="text-primary fw-semibold">
+                            <i class="bi bi-arrow-right-circle me-1"></i>Gestionar mesa
+                        </small>
+                    </div>
+                </div>
+            </a>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">No hay mesas registradas.</div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresca el panel cada 30 segundos para ver nuevas notificaciones
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}

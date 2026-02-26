@@ -1,0 +1,144 @@
+{% extends 'core/base.html' %}
+{% block title %}Menús - Restaurante{% endblock %}
+{% block nav_menus %}active{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-journal-text me-2"></i>Menús</h2>
+    <span class="text-muted">Total: {{ menus.count }} menú(s)</span>
+</div>
+
+<div class="row g-4">
+
+    <!-- Card Agregar Menú -->
+    <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="card card-add h-100" data-bs-toggle="modal" data-bs-target="#modalAgregarMenu">
+            <div class="text-center text-muted p-4">
+                <i class="bi bi-plus-circle" style="font-size: 2.5rem;"></i>
+                <p class="mt-2 fw-semibold">Agregar Menú</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Menús -->
+    {% for menu in menus %}
+        <div class="col-sm-6 col-md-4 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <span class="badge bg-primary mb-2">{{ menu.get_tipo_display }}</span>
+                    <h5 class="card-title">{{ menu.nombre }}</h5>
+                    <hr class="my-2">
+                    <p class="small text-muted mb-1"><strong>Platos:</strong></p>
+                    {% for mp in menu.menu_platos.all %}
+                        <div class="d-flex justify-content-between small">
+                            <span><i class="bi bi-dot"></i>{{ mp.nombre }}</span>
+                            <span class="text-success">${{ mp.precio|floatformat:0 }}</span>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted small fst-italic">Sin platos asignados</p>
+                    {% endfor %}
+                </div>
+                <div class="card-footer bg-transparent d-flex gap-2">
+                    <a href="{% url 'menu_editar' menu.pk %}" class="btn btn-outline-secondary btn-sm flex-fill">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <button class="btn btn-outline-danger btn-sm flex-fill"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalEliminarMenu{{ menu.pk }}">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Eliminar Menú -->
+        <div class="modal fade" id="modalEliminarMenu{{ menu.pk }}" tabindex="-1">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">¿Eliminar "{{ menu.nombre }}"?</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">Se eliminarán también los platos asignados a este menú.</div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                        <form method="POST" action="{% url 'menu_eliminar' menu.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">No hay menús registrados aún.</div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Agregar Menú -->
+<div class="modal fade" id="modalAgregarMenu" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Agregar Menú</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="text-danger small mt-1">{{ field.errors.as_text }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <hr>
+                    <label class="form-label fw-semibold">Platos del Menú</label>
+                    {% if platos %}
+                        <div class="row g-2" style="max-height: 250px; overflow-y: auto;">
+                            {% for plato in platos %}
+                                <div class="col-12">
+                                    <div class="border rounded p-2 d-flex align-items-center gap-3">
+                                        <input type="checkbox"
+                                               name="platos" value="{{ plato.pk }}"
+                                               id="plato_{{ plato.pk }}">
+                                        <label class="w-100 mb-0" for="plato_{{ plato.pk }}">
+                                            <span class="fw-semibold">{{ plato.nombre }}</span>
+                                            <span class="text-success float-end">${{ plato.precio|floatformat:0 }}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            No hay platos registrados. <a href="{% url 'platos_lista' %}">Agregar platos primero.</a>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-dark">
+                        <i class="bi bi-save me-1"></i> Guardar Menú
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    {% if form.errors %}
+        var modal = new bootstrap.Modal(document.getElementById('modalAgregarMenu'));
+        modal.show();
+    {% endif %}
+</script>
+{% endblock %}

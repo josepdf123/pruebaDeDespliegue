@@ -1,0 +1,151 @@
+{% extends 'core/base.html' %}
+{% block title %}Mesa {{ mesa.numMesa }} - Pedido{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-receipt me-2"></i>Mesa {{ mesa.numMesa }}</h2>
+    <a href="{% url 'panel_mesero' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Volver
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- Columna izquierda: Estado + Platos -->
+    <div class="col-md-6">
+        <!-- Cambiar estado -->
+        <div class="card mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-toggle-on me-2"></i>Estado de la Mesa</div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="cambiar_estado">
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% for estado in estados %}
+                            <button type="submit" name="estado_mesa" value="{{ estado.descripcion }}"
+                                class="btn btn-sm
+                                {% if estado.descripcion|lower == 'disponible' %}btn-success
+                                {% elif estado.descripcion|lower == 'reservada' %}btn-warning
+                                {% else %}btn-danger{% endif %}
+                                {% if mesa.estado.pk == estado.pk %}active{% endif %}">
+                                {{ estado.descripcion }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Agregar plato -->
+        <div class="card">
+            <div class="card-header fw-semibold"><i class="bi bi-plus-circle me-2"></i>Agregar Platillo</div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="agregar_plato">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Platillo</label>
+                        <select name="plato_id" class="form-select" required>
+                            <option value="">-- Selecciona un platillo --</option>
+                            {% for plato in platos %}
+                                <option value="{{ plato.pk }}">{{ plato.nombre }} — ${{ plato.precio|floatformat:0 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Cantidad</label>
+                        <input type="number" name="cantidad" class="form-control" value="1" min="1" max="20">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Notas <span class="text-muted fw-normal">(opcional)</span></label>
+                        <input type="text" name="notas" class="form-control" placeholder="Ej: sin cebolla...">
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100">
+                        <i class="bi bi-plus me-1"></i> Agregar al pedido
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Columna derecha: Comanda -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-journal-check me-2"></i>Comanda - Mesa {{ mesa.numMesa }}</span>
+                {% if pedido %}
+                    <span class="badge
+                        {% if pedido.idEstado.descripcion|lower == 'pendiente' %}bg-secondary
+                        {% elif pedido.idEstado.descripcion|lower == 'en cocina' %}bg-warning text-dark
+                        {% elif pedido.idEstado.descripcion|lower == 'listo' %}bg-success
+                        {% else %}bg-secondary{% endif %}">
+                        {{ pedido.idEstado.descripcion }}
+                    </span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if pedido and pedido.detalles.all %}
+                    {% for detalle in pedido.detalles.all %}
+                        <div class="d-flex justify-content-between align-items-start border-bottom py-2">
+                            <div>
+                                <span class="fw-semibold">{{ detalle.cantidad }}x {{ detalle.plato.nombre }}</span>
+                                {% if detalle.notas %}
+                                    <br><small class="text-muted fst-italic">📝 {{ detalle.notas }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-success">${{ detalle.subtotal|floatformat:0 }}</span>
+                                {% if pedido.idEstado.descripcion|lower == 'pendiente' %}
+                                    <form method="POST" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="eliminar_detalle">
+                                        <input type="hidden" name="detalle_id" value="{{ detalle.pk }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                    <div class="d-flex justify-content-between fw-bold mt-3 fs-5">
+                        <span>Total:</span>
+                        <span class="text-success">${{ pedido.total|floatformat:0 }}</span>
+                    </div>
+
+                    {% if pedido.idEstado.descripcion|lower == 'pendiente' %}
+                        <form method="POST" class="mt-3">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="enviar_cocina">
+                            <button type="submit" class="btn btn-warning w-100 fw-bold">
+                                <i class="bi bi-fire me-2"></i>Enviar a Cocina
+                            </button>
+                        </form>
+                    {% elif pedido.idEstado.descripcion|lower == 'en cocina' %}
+                        <div class="alert alert-warning mt-3 text-center">
+                            <i class="bi bi-hourglass-split me-2"></i>Pedido en cocina...
+                        </div>
+                    {% elif pedido.idEstado.descripcion|lower == 'listo' %}
+                        <div class="alert alert-success mt-3 text-center">
+                            <i class="bi bi-check-circle me-2"></i><strong>¡Pedido listo para entregar!</strong>
+                        </div>
+                        <form method="POST" class="mt-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="entregar_pedido">
+                            <button type="submit" class="btn btn-success w-100 fw-bold">
+                                <i class="bi bi-bag-check me-2"></i>Pedido Entregado
+                            </button>
+                        </form>
+                    {% endif %}
+
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-clipboard" style="font-size:2rem;"></i>
+                        <p class="mt-2">Sin platillos aún.<br>Agrega platillos desde la izquierda.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

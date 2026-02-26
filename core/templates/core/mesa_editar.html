@@ -1,0 +1,63 @@
+{% extends 'core/base.html' %}
+{% block title %}Editar Menú - Restaurante{% endblock %}
+{% block nav_menus %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil me-2"></i>Editar Menú: {{ menu.nombre }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="text-danger small">{{ field.errors.as_text }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <hr>
+                    <label class="form-label fw-semibold">Platos del Menú</label>
+                    {% if platos %}
+                        <div class="row g-2" style="max-height: 300px; overflow-y: auto;">
+                            {% for plato in platos %}
+                                <div class="col-12">
+                                    <div class="border rounded p-2 d-flex align-items-center gap-3">
+                                        <input type="checkbox"
+                                               name="platos" value="{{ plato.pk }}"
+                                               id="plato_edit_{{ plato.pk }}"
+                                               {% if plato.pk in platos_actuales %}checked{% endif %}>
+                                        <label class="w-100 mb-0" for="plato_edit_{{ plato.pk }}">
+                                            <span class="fw-semibold">{{ plato.nombre }}</span>
+                                            <span class="text-success float-end">${{ plato.precio|floatformat:0 }}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            No hay platos registrados. <a href="{% url 'platos_lista' %}">Agregar platos primero.</a>
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-save me-1"></i> Guardar Cambios
+                        </button>
+                        <a href="{% url 'menus_lista' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Volver
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
